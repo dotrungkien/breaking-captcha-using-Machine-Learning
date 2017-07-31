@@ -127,17 +127,8 @@ def predict(filename):
 
 fs = [f for f in listdir('data/predict/') if isfile(join('data/predict', f)) and 'jpg' in f]
 total = len(fs)
-
-for i in range(10):
-    wrong = 0
-    for f in fs:
-        char = predict_char('data/predict/'+f)
-        if char != f.split('-')[0]: 
-            wrong += 1
-            rename('data/predict/', f, char)
-    print("wrong:{0}/{1}".format(wrong, total))
-    detect_folder('data/predict/')
-# train()
-# for i in range(10):
-#     filename = '{0:04}.jpg'.format(i)
-#     predict(filename)
+for f in fs:
+    char = predict_char('data/predict/'+f)
+    if char != f.split('-')[0]: 
+        rename('data/predict/', f, char)
+# detect_folder('data/predict/')

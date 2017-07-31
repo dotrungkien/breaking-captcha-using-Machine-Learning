@@ -91,7 +91,7 @@ def adjust(path, filename):
 def rename(path, filename, letter):
 	os.rename(join(path,filename), join(path, letter+'-' + rand_string() + '.jpg'))
 			
-def detect(path, filename):
+def detect_char(path, filename):
 	class Fit:
 		letter = None
 		difference = 0
@@ -118,7 +118,7 @@ def adjust_folder(path):
 def detect_folder(path):
 	for f in listdir(path):
 		if isfile(join(path, f)) and 'jpg' in f:
-			detect(path, f)
+			detect_char(path, f)
 
 if __name__=='__main__':
 	# for i in range(1, 800):
