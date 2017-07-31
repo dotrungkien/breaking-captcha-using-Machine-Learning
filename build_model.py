@@ -9,6 +9,7 @@ from PIL import Image
 import requests
 import cv2
 import glob
+import random
 from prepare_data import reduce_noise, crop, adjust_folder, rename, detect_folder
 
 
@@ -33,7 +34,7 @@ def img_preprocessing():
     labels = []
     all_files = [f for f in listdir('data/chars/') if isfile(join('data/chars/', f)) and 'jpg' in f]
     for name in all_files:
-        labels.append(d[name.split('-')[0]])
+        labels.append(d[name.split('-')[0].upper()])
         img_path = 'data/chars/' + name
         img = np.array(Image.open(img_path).convert('L')).reshape(1080,)
         for i in range(1080):
@@ -43,13 +44,22 @@ def img_preprocessing():
     labels = np.array(labels)
     return images, labels
 
-images, labels = img_preprocessing()
-n = len(images)
-n_train = int(n*0.8)
-images_train = images[:n_train]
-labels_train = labels[:n_train]
-images_test = images[n_train:]
-labels_test = labels[n_train:]
+def building_model():
+    images_tmp, labels_tmp = img_preprocessing()
+    n = len(images_tmp)
+    images = []
+    labels = []
+    shuffle_index = list(range(n))
+    random.shuffle(shuffle_index)
+    for i in shuffle_index:
+        images.append(images_tmp[i])
+        labels.append(labels_tmp[i])
+    n_train = int(n*0.8)
+    images_train = images[:n_train]
+    labels_train = labels[:n_train]
+    images_test = images[n_train:]
+    labels_test = labels[n_train:]
+    return images_train, labels_train, images_test, labels_test
 
 # tf Graph Input
 x = tf.placeholder(tf.float32, [None, 1080])
@@ -72,6 +82,7 @@ init = tf.global_variables_initializer()
 
 saver = tf.train.Saver()
 def train():
+    images_train, labels_train, images_test, labels_test = building_model()
     # Launch the graph
     with tf.Session() as sess:
         sess.run(init)
@@ -119,16 +130,23 @@ def predict(filename):
     for f in files: os.remove(f)
     crop(filename, out_path)
     adjust_folder(out_path)
-    for f in listdir(out_path):
-        if isfile(join(out_path, f)) and 'jpg' in f:
-            res += predict_char(out_path+f)
+    files = sorted([f for f in listdir(out_path) if isfile(join(out_path, f)) and 'jpg' in f])
+    for f in files:
+        res += predict_char(out_path+f)
     print(res)
     return res
-
-fs = [f for f in listdir('data/predict/') if isfile(join('data/predict', f)) and 'jpg' in f]
-total = len(fs)
-for f in fs:
-    char = predict_char('data/predict/'+f)
-    if char != f.split('-')[0]: 
-        rename('data/predict/', f, char)
-# detect_folder('data/predict/')
+# train()
+# predict('0800.jpg')
+# predict('0801.jpg')
+# predict('0802.jpg')
+# predict('0803.jpg')
+# predict('0804.jpg')
+# predict('0805.jpg')
+# fs = [f for f in listdir('data/predict/') if isfile(join('data/predict', f)) and 'jpg' in f]
+# total = len(fs)
+# for f in fs:
+#     char = predict_char('data/predict/'+f)
+#     print(f)
+#     if char != f.split('-')[0]: 
+#         rename('data/predict/', f, char)
+# # detect_folder('data/predict/')

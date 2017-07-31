@@ -1,1 +1,1 @@
-# break_captcha_ver2
+# A simple break captcha application using Softmax Algorithm
