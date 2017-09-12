@@ -64,7 +64,7 @@ def crop(filename, outpath):
 			crop = crop.resize((30,60))
 			crop.save(outpath + '{0:04}_{1}.jpg'.format(part, origin))
 			part += 1
-			
+
 def adjust(path, filename):
 	img = Image.open(join(path, filename))
 	p = img.convert('P')
@@ -90,7 +90,7 @@ def adjust(path, filename):
 
 def rename(path, filename, letter):
 	os.rename(join(path,filename), join(path, letter+'-' + rand_string() + '.jpg'))
-			
+
 def detect_char(path, filename):
 	class Fit:
 		letter = None
@@ -133,12 +133,12 @@ if __name__=='__main__':
 	# adjust_folder('data/train/sliced')
 	# adjust_folder('data/test/sliced')
 	# detect_folder('data/train/sliced')
-	reduce_noise('1.jpg')
-	crop('1.jpg', 'viblo/')
-	adjust('viblo/', '0000_1.jpg')
-	adjust('viblo/', '0001_1.jpg')
-	adjust('viblo/', '0002_1.jpg')
-	adjust('viblo/', '0003_1.jpg')
-	adjust('viblo/', '0004_1.jpg')
-	adjust('viblo/', '0005_1.jpg')
+	# reduce_noise('1.jpg')
+	# crop('1.jpg', 'viblo/')
+	# adjust('viblo/', '0000_1.jpg')
+	# adjust('viblo/', '0001_1.jpg')
+	# adjust('viblo/', '0002_1.jpg')
+	# adjust('viblo/', '0003_1.jpg')
+	# adjust('viblo/', '0004_1.jpg')
+	# adjust('viblo/', '0005_1.jpg')
 	pass
