@@ -1,4 +1,4 @@
-# A simple breaking captcha app using Machine Learning
+# A simple breaking captcha app by Machine Learning
 ## Bài viết:
 https://viblo.asia/p/breaking-a-captcha-by-machine-learning-bWrZneDbKxw
 
@@ -7,7 +7,7 @@ https://viblo.asia/p/breaking-a-captcha-by-machine-learning-bWrZneDbKxw
 ## Get dữ liệu và tiền xử lý
 - prepare_data.py
 
-## Các kỹ sử dụng:
+## Các kỹ thuật sử dụng:
 - Softmax Regression (softmax.py)
 - Support Vector Machine (svm.py)
 
