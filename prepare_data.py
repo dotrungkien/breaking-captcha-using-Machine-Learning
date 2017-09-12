@@ -1,4 +1,6 @@
 from __future__ import division
+from __future__ import print_function
+
 import requests
 import os
 from os import listdir
@@ -9,39 +11,68 @@ import numpy as np
 import cv2
 import random
 import string
+from scipy.misc import imread
+
+chars_list = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+chars_dict = {c: chars_list.index(c) for c in chars_list}
+
+IMAGE_TOTAL = 1000
+RAW_PATH = "data/raw/"
+SLICED_PATH = "data/sliced/"
 
 part = 0
 list_chars = [f for f in listdir('data/chars') if isfile(join('data/chars', f)) and 'jpg' in f]
 
-
-def rand_string(N=6):
-	return ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(N))
-
-def get_data():
+def crawl_images():
 	url = "https://chuyencuadev.com/captcha"
-	for i in range (1, 1000):
-		filename = '{0:04}.jpg'.format(i)
-		print(filename)
-		with open(filename, 'wb') as f:
+	for i in range (1, IMAGE_TOTAL):
+		file_path = join(RAW_PATH,'{0:04}.jpg'.format(i))
+		print(file_path)
+		with open(file_path, 'wb') as f:
 			response = requests.get(url)
 			if response.ok: f.write(response.content)
 
-def reduce_noise(filename):
-	img = cv2.imread(filename)
-	dst = cv2.fastNlMeansDenoisingColored(img,None,50,50,7,21)
-	cv2.imwrite(filename, dst)
-	img = Image.open(filename).convert('L')
-	img = img.point(lambda x: 0 if x<128 else 255, '1')
-	img.save(filename)
+def process_directory(directory):
+    file_list = []
+    for file_name in listdir(directory):
+        file_path = join(directory, file_name)
+        if isfile(file_path) and 'jpg' in file_name:
+            file_list.append(file_path)
+    return file_list
 
-def crop(filename, outpath):
-	global part
-	img = Image.open(filename)
+def process_image(image_path):
+    image = imread(image_path)
+    image = image.reshape(1080,)
+    return np.array([x/255. for x in image])
+
+def reduce_noise(file_path):
+	print(file_path)
+	img = cv2.imread(file_path)
+	dst = cv2.fastNlMeansDenoisingColored(img,None,50,50,7,21)
+	cv2.imwrite(file_path, dst)
+	img = Image.open(file_path).convert('L')
+	img = img.point(lambda x: 0 if x<128 else 255, '1')
+	img.save(file_path)
+
+def reduce_noise_dir(directory):
+	list_file = process_directory(directory)
+	for file_path in list_file:
+		print(file_path)
+		img = cv2.imread(file_path)
+		dst = cv2.fastNlMeansDenoisingColored(img,None,50,50,7,21)
+		cv2.imwrite(file_path, dst)
+		img = Image.open(file_path).convert('L')
+		img = img.point(lambda x: 0 if x<128 else 255, '1')
+		img.save(file_path)
+
+def crop(file_path, out_directory):
+	part = 0
+	img = Image.open(file_path)
 	p = img.convert('P')
 	w, h = p.size
 
 	letters = []
-	start, end = -1, -1
+	left, right= -1, -1
 	found = False
 	for i in range(w):
 		in_letter = False
@@ -51,42 +82,81 @@ def crop(filename, outpath):
 				break
 		if not found and in_letter:
 			found = True
-			start = i
-		if found and not in_letter and i-start > 25:
+			left = i
+		if found and not in_letter and i-left > 25:
 			found = False
-			end = i
-			letters.append([start, end])
-	origin = filename.split('/')[-1].split('.')[0]
+			right = i
+			letters.append([left, right])
+	origin = file_path.split('/')[-1].split('.')[0]
 	for [l,r] in letters:
 		if r-l < 40:
 			bbox = (l, 0, r, h)
 			crop = img.crop(bbox)
 			crop = crop.resize((30,60))
-			crop.save(outpath + '{0:04}_{1}.jpg'.format(part, origin))
+			crop.save(join(out_directory, '{0:04}_{1}.jpg'.format(part, origin)))
 			part += 1
 
-def adjust(path, filename):
-	img = Image.open(join(path, filename))
-	p = img.convert('P')
-	w, h = p.size
-	start, end = -1, -1
-	found = False
-	for j in range(h):
-		in_letter = False
+def crop_dir(raw_directory, out_directory):
+	list_file = process_directory(raw_directory)
+	global part
+	for file_path in list_file:
+		print(file_path)
+		img = Image.open(file_path)
+		p = img.convert('P')
+		w, h = p.size
+
+		letters = []
+		left, right= -1, -1
+		found = False
 		for i in range(w):
-			if p.getpixel((i,j)) == 0:
-				in_letter = True
-				break
-		if not found and in_letter:
-			found = True
-			start = j
-		if found and not in_letter and j-start > 35:
-			found = False
-			end = j
-	bbox = (0, start, w, end)
-	crop = img.crop(bbox)
-	crop = crop.resize((30,36))
-	crop.save(join(path, filename))
+			in_letter = False
+			for j in range(h):
+				if p.getpixel((i,j)) == 0:
+					in_letter = True
+					break
+			if not found and in_letter:
+				found = True
+				left = i
+			if found and not in_letter and i-left > 25:
+				found = False
+				right = i
+				letters.append([left, right])
+		origin = file_path.split('/')[-1].split('.')[0]
+		for [l,r] in letters:
+			if r-l < 40:
+				bbox = (l, 0, r, h)
+				crop = img.crop(bbox)
+				crop = crop.resize((30,60))
+				crop.save(join(out_directory, '{0:04}_{1}.jpg'.format(part, origin)))
+				part += 1
+
+def adjust_dir(directory):
+	list_file = process_directory(directory)
+	for file_path in list_file:
+		img = Image.open(file_path)
+		p = img.convert('P')
+		w, h = p.size
+		start, end = -1, -1
+		found = False
+		for j in range(h):
+			in_letter = False
+			for i in range(w):
+				if p.getpixel((i,j)) == 0:
+					in_letter = True
+					break
+			if not found and in_letter:
+				found = True
+				start = j
+			if found and not in_letter and j-start > 35:
+				found = False
+				end = j
+		bbox = (0, start, w, end)
+		crop = img.crop(bbox)
+		crop = crop.resize((30,36))
+		crop.save(file_path)
+
+def rand_string(N=6):
+	return ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(N))
 
 def rename(path, filename, letter):
 	os.rename(join(path,filename), join(path, letter+'-' + rand_string() + '.jpg'))
@@ -111,34 +181,14 @@ def detect_char(path, filename):
 	print(filename, best.letter)
 	rename(path, filename, best.letter)
 
-def adjust_folder(path):
-	for f in listdir(path):
-		if isfile(join(path, f)) and 'jpg' in f:
-			adjust(path, f)
-def detect_folder(path):
-	for f in listdir(path):
-		if isfile(join(path, f)) and 'jpg' in f:
-			detect_char(path, f)
+def detect_dir(directory):
+	for f in listdir(directory):
+		if isfile(join(directory, f)) and 'jpg' in f:
+			detect_char(directory, f)
 
 if __name__=='__main__':
-	# for i in range(1, 800):
-	# 	filename = 'data/train/{0:04}.jpg'.format(i)
-	# 	print(filename)
-	# 	crop(filename, 'data/train/sliced/')
-	# for i in range(800, 1000):
-	# 	filename = 'data/test/{0:04}.jpg'.format(i)
-	# 	print(filename)
-	# 	crop(filename, 'data/test/sliced/')
-	# adjust_folder('data/chars/')
-	# adjust_folder('data/train/sliced')
-	# adjust_folder('data/test/sliced')
-	# detect_folder('data/train/sliced')
-	# reduce_noise('1.jpg')
-	# crop('1.jpg', 'viblo/')
-	# adjust('viblo/', '0000_1.jpg')
-	# adjust('viblo/', '0001_1.jpg')
-	# adjust('viblo/', '0002_1.jpg')
-	# adjust('viblo/', '0003_1.jpg')
-	# adjust('viblo/', '0004_1.jpg')
-	# adjust('viblo/', '0005_1.jpg')
+	crawl_images()
+	reduce_noise_dir(RAW_PATH)
+	crop_dir(RAW_PATH, SLICED_PATH)
+	adjust_dir(SLICED_PATH)
 	pass

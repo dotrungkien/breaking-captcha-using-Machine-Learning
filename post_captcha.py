@@ -1,6 +1,6 @@
 import requests
 import random
-from build_model import predict
+from svm import predict_string
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
@@ -8,12 +8,10 @@ company_name = 'framgia'
 
 for i in range(100):
     s = requests.Session()
-
     s.get('https://chuyencuadev.com/', verify=False)
-    r = s.get(f'https://chuyencuadev.com/{company_name}/reviews', verify=False)
+    r = s.get('https://chuyencuadev.com/{0}/reviews'.format(company_name), verify=False)
 
     # print(r.text)
-
 
     import time
 
@@ -38,14 +36,14 @@ for i in range(100):
     culture_fun_rate = random.randrange(3,6,1)
     office_workspace_rate = random.randrange(3,6,1)
     payload = {
-        "salary_benefit_rate":f"{salary_benefit_rate}",
-        "training_learning_rate":f"{training_learning_rate}",
-        "management_care_rate":f"{management_care_rate}",
-        "culture_fun_rate":f"{culture_fun_rate}",
-        "office_workspace_rate":f"{office_workspace_rate}",
+        "salary_benefit_rate":str(salary_benefit_rate),
+        "training_learning_rate":str(training_learning_rate),
+        "management_care_rate":str(management_care_rate),
+        "culture_fun_rate":str(culture_fun_rate),
+        "office_workspace_rate":str(office_workspace_rate),
     }
-    payload["captcha"] = predict('captcha.jpg')
+    payload["captcha"] = predict_string('captcha.jpg')
     # raw_input().strip()
     # print(payload)
 
-    r = s.post(f"https://chuyencuadev.com/{company_name}/review", headers=headers, data=payload)
+    r = s.post('https://chuyencuadev.com/{0}/review'.format(company_name), headers=headers, data=payload)

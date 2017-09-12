@@ -4,42 +4,16 @@ from __future__ import print_function
 import os
 from os import listdir
 from os.path import join, isfile
-from scipy.misc import imread
 import numpy as np
 from sklearn.svm import SVC
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import cross_val_score
 from sklearn.externals import joblib
-from prepare_data import reduce_noise, crop, adjust_folder, rename, detect_folder
+from prepare_data import process_directory, process_image, reduce_noise, crop, adjust_dir, rename
 import glob
 
 chars_list = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 chars_dict = {c: chars_list.index(c) for c in chars_list}
-
-def process_directory(directory):
-    file_list = []
-
-    for file_name in listdir(directory):
-        file_path = join(directory, file_name)
-        if isfile(file_path) and 'jpg' in file_name:
-            file_list.append(file_path)
-    return file_list
-
-def process_directory2(directory):
-    file_list = []
-
-    for root, _, files in os.walk(directory):
-        print(root, files)
-        for file_name in files:
-            file_path = join(root, file_name)
-            if isfile(file_path) and 'jpg' in file_path:
-                file_list.append(file_path)
-    return file_list
-
-def process_image(image_path):
-    image = imread(image_path)
-    image = image.reshape(1080,)
-    return np.array([x/255. for x in image])
 
 def process_data(directory):
     images = []
@@ -48,7 +22,7 @@ def process_data(directory):
     for image_path in image_list:
         images.append(process_image(image_path))
         labels.append(chars_dict[image_path.split('/')[-1].split('-')[0]])
-    return np.array(images), np.array(labels)
+    return np.array(images), np.array(labels).reshape([len(labels), 1])
 
 def train():
     print("Loading images....")
@@ -79,7 +53,7 @@ def predict_string(file_path):
     files = glob.glob(out_path+'*')
     for f in files: os.remove(f)
     crop(file_path, out_path)
-    adjust_folder(out_path)
+    adjust_dir(out_path)
     file_list = process_directory(out_path)
     for f in sorted(file_list):
         res += predict_char(f)
@@ -87,7 +61,8 @@ def predict_string(file_path):
     return res
 
 if __name__=='__main__':
-    # train()
-    # predict_char("N-test_char.jpg")
-    predict_string("test_string.jpg")
-    pass
+    if not isfile('svm.pkl'):
+        train()
+    else:
+        predict_char("N-test_char.jpg")
+        predict_string("test_string.jpg")
